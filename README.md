@@ -7,6 +7,8 @@ This program offers a powerful solution for tackling the Elliptic Curve Discrete
 - **Fast modular inversion:** Implements fast modular inversion using Delayed Right Shift 62 bits.
 - **Fast modular multiplication:** Utilizes 2 steps folding 512 bits to 256 bits reduction using 64-bit digits.
 
+Official website: https://puzzlesearch.github.io
+
 This program is heavly based on https://github.com/JeanLucPons/Kangaroo.
 ### How It Works
 
