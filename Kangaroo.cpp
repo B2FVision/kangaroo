@@ -353,7 +353,7 @@ void Kangaroo::SolveKeyCPU(TH_PARAM *ph) {
         }
 
         if (clientMode) {
-            double now = Timer::get_tick();
+            double now = Timer::getTick();
             if (now - lastSent > SEND_PERIOD) {
                 LOCK(ghMutex);
                 // Send to server
@@ -414,12 +414,12 @@ void Kangaroo::SolveKeyGPU(TH_PARAM *ph) {
   if(keyIdx == 0)
     ::printf("GPU: %s (%.1f MB used)\n",gpu->deviceName.c_str(),gpu->GetMemory() / 1048576.0);
 
-  double t0 = Timer::get_tick();
+  double t0 = Timer::getTick();
 
 
   if( ph->px==NULL ) {
     if(keyIdx == 0)
-      ::printf("SolveKeyGPU Thread GPU#%d: creating kangaroos...\n",ph->gpuId);
+      ::printf("CUDA Thread GPU#%d: creating kangaroos...\n",ph->gpuId);
     // Create Kangaroos, if not already loaded
     uint64_t nbThread = gpu->GetNbThread();
     ph->px = new Int[ph->nbKangaroo];
@@ -448,10 +448,10 @@ void Kangaroo::SolveKeyGPU(TH_PARAM *ph) {
 
   gpu->callKernel();
 
-  double t1 = Timer::get_tick();
+  double t1 = Timer::getTick();
 
   if(keyIdx == 0)
-    ::printf("SolveKeyGPU Thread GPU#%d: 2^%.2f kangaroos [%.1fs]\n",ph->gpuId,log2((double)ph->nbKangaroo),(t1-t0));
+    ::printf("CUDA Thread GPU#%d: 2^%.2f kangaroos [%.1fs]\n",ph->gpuId,log2((double)ph->nbKangaroo),(t1-t0));
 
   ph->hasStarted = true;
 
@@ -465,7 +465,7 @@ void Kangaroo::SolveKeyGPU(TH_PARAM *ph) {
       for(int i=0;i<(int)gpuFound.size();i++)
         dps.push_back(gpuFound[i]);
 
-      double now = Timer::get_tick();
+      double now = Timer::getTick();
       if(now - lastSent > SEND_PERIOD) {
         LOCK(ghMutex);
         SendToServer(dps,ph->threadId,ph->gpuId);
@@ -694,7 +694,7 @@ void Kangaroo::InitSearchKey() {
 }
 
 void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize) {
-    double t0 = Timer::get_tick();
+    double t0 = Timer::getTick();
 
     nbCPUThread = nbThread;
   nbGPUThread = (useGpu ? (int)gpuId.size() : 0);
@@ -820,6 +820,6 @@ void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize
             hashTable.Reset();
     }
 
-    double t1 = Timer::get_tick();
+    double t1 = Timer::getTick();
     ::printf("\nDone: Total time %s \n", GetTimeStr(t1 - t0 + offsetTime).c_str());
 }
