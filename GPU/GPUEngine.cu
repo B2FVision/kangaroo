@@ -12,12 +12,9 @@
 #include "GPUCompute.h"
 
 __global__ void comp_kangaroos(uint64_t *kangaroos,uint32_t maxFound,uint32_t *found,uint64_t dpMask) {
-
   int xPtr = (blockIdx.x*blockDim.x*GPU_GRP_SIZE) * KSIZE; // x[4] , y[4] , d[2], lastJump
   ComputeKangaroos(kangaroos + xPtr,maxFound,found,dpMask);
-
 }
-
 
 using namespace std;
 
@@ -58,9 +55,7 @@ int _ConvertSMVer2Cores(int major,int minor) {
 
     index++;
   }
-
   return 0;
-
 }
 
 void GPUEngine::SetWildOffset(Int* offset) {
@@ -173,20 +168,16 @@ GPUEngine::~GPUEngine() {
 
 }
 
-
 int GPUEngine::GetMemory() {
   return kangarooSize + outputSize + jumpSize;
 }
-
 
 int GPUEngine::GetGroupSize() {
   return GPU_GRP_SIZE;
 }
 
 bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
-
   if(*x <= 0 || *y <= 0) {
-
     int deviceCount = 0;
     cudaError_t error_id = cudaGetDeviceCount(&deviceCount);
 
@@ -208,29 +199,21 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
 
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp,gpuId);
-
     if(*x <= 0) *x = 2 * deviceProp.multiProcessorCount;
     if(*y <= 0) *y = 2 * _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor);
     if(*y <= 0) *y = 128;
-
   }
-
   return true;
-
 }
 
 void *GPUEngine::AllocatePinnedMemory(size_t size) {
-
   void *buff;
-
   cudaError_t err = cudaHostAlloc(&buff,size,cudaHostAllocPortable);
   if(err != cudaSuccess) {
     printf("GPUEngine: AllocatePinnedMemory: %s\n",cudaGetErrorString(err));
     return NULL;
   }
-
   return buff;
-
 }
 
 void GPUEngine::FreePinnedMemory(void *buff) {
@@ -238,9 +221,7 @@ void GPUEngine::FreePinnedMemory(void *buff) {
 }
 
 void GPUEngine::PrintCudaInfo() {
-
   cudaError_t err;
-
   const char *sComputeMode[] =
   {
     "Multiple host threads",
@@ -258,13 +239,11 @@ void GPUEngine::PrintCudaInfo() {
     printf("GPUEngine: CudaGetDeviceCount %s\n",cudaGetErrorString(error_id));
     return;
   }
-
   // This function call returns 0 if there are no CUDA capable devices.
   if(deviceCount == 0) {
     printf("GPUEngine: There are no available device(s) that support CUDA\n");
     return;
   }
-
   for(int i = 0; i<deviceCount; i++) {
 
     err = cudaSetDevice(i);
@@ -272,7 +251,6 @@ void GPUEngine::PrintCudaInfo() {
       printf("GPUEngine: cudaSetDevice(%d) %s\n",i,cudaGetErrorString(err));
       return;
     }
-
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp,i);
     printf("GPU #%d %s (%dx%d cores) (Cap %d.%d) (%.1f MB) (%s)\n",
@@ -280,7 +258,6 @@ void GPUEngine::PrintCudaInfo() {
       _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor),
       deviceProp.major,deviceProp.minor,(double)deviceProp.totalGlobalMem / 1048576.0,
       sComputeMode[deviceProp.computeMode]);
-
   }
 
 }
@@ -290,7 +267,6 @@ int GPUEngine::GetNbThread() {
 }
 
 void GPUEngine::SetKangaroos(Int *px,Int *py,Int *d) {
-
   // Sets the kangaroos of each thread
   int gSize = KSIZE * GPU_GRP_SIZE;
   int strideSize = nbThreadPerGroup * KSIZE;
@@ -323,19 +299,16 @@ void GPUEngine::SetKangaroos(Int *px,Int *py,Int *d) {
 
         idx++;
       }
-
     }
 
     uint32_t offset = b * blockSize;
     cudaMemcpy(inputKangaroo + offset,inputKangarooPinned,kangarooSizePinned,cudaMemcpyHostToDevice);
-
   }
 
   cudaError_t err = cudaGetLastError();
   if(err != cudaSuccess) {
     printf("GPUEngine: SetKangaroos: %s\n",cudaGetErrorString(err));
   }
-
 }
 
 void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
@@ -353,7 +326,6 @@ void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
   int idx = 0;
 
   for(int b = 0; b < nbBlock; b++) {
-
     uint32_t offset = b * blockSize;
     cudaMemcpy(inputKangarooPinned,inputKangaroo + offset,kangarooSizePinned,cudaMemcpyDeviceToHost);
 
@@ -385,7 +357,6 @@ void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
 
         idx++;
       }
-
     }
   }
 
@@ -393,15 +364,12 @@ void GPUEngine::GetKangaroos(Int *px,Int *py,Int *d) {
   if(err != cudaSuccess) {
     printf("GPUEngine: GetKangaroos: %s\n",cudaGetErrorString(err));
   }
-
 }
 
 void GPUEngine::SetKangaroo(uint64_t kIdx,Int *px,Int *py,Int *d) {
-
   int gSize = KSIZE * GPU_GRP_SIZE;
   int strideSize = nbThreadPerGroup * KSIZE;
   int blockSize = nbThreadPerGroup * gSize;
-
   uint64_t t = kIdx % nbThreadPerGroup;
   uint64_t g = (kIdx / nbThreadPerGroup) % GPU_GRP_SIZE;
   uint64_t b = kIdx / (nbThreadPerGroup*GPU_GRP_SIZE);
@@ -438,10 +406,8 @@ void GPUEngine::SetKangaroo(uint64_t kIdx,Int *px,Int *py,Int *d) {
 }
 
 bool GPUEngine::callKernel() {
-
   // Reset nbFound
   cudaMemset(outputItem,0,4);
-
   // Call the kernel (Perform STEP_SIZE keys per thread)
   comp_kangaroos << < nbThread / nbThreadPerGroup,nbThreadPerGroup >> >
       (inputKangaroo,maxFound,outputItem,dpMask);
@@ -451,9 +417,7 @@ bool GPUEngine::callKernel() {
     printf("GPUEngine: Kernel: %s\n",cudaGetErrorString(err));
     return false;
   }
-
   return true;
-
 }
 
 void GPUEngine::SetParams(uint64_t dpMask,Int *distance,Int *px,Int *py) {
@@ -486,11 +450,9 @@ void GPUEngine::SetParams(uint64_t dpMask,Int *distance,Int *px,Int *py) {
     printf("GPUEngine: SetParams: Failed to copy to constant memory: %s\n",cudaGetErrorString(err));
     return;
   }
-
 }
 
 bool GPUEngine::callKernelAndWait() {
-
   // Debug function
   callKernel();
   cudaMemcpy(outputItemPinned,outputItem,outputSize,cudaMemcpyDeviceToHost);
@@ -499,24 +461,15 @@ bool GPUEngine::callKernelAndWait() {
     printf("GPUEngine: callKernelAndWait: %s\n",cudaGetErrorString(err));
     return false;
   }
-
   return true;
-
 }
 
 bool GPUEngine::Launch(std::vector<ITEM> &hashFound,bool spinWait) {
-
-
   hashFound.clear();
-
   // Get the result
-
   if(spinWait) {
-
     cudaMemcpy(outputItemPinned,outputItem,outputSize,cudaMemcpyDeviceToHost);
-
   } else {
-
     // Use cudaMemcpyAsync to avoid default spin wait of cudaMemcpy wich takes 100% CPU
     cudaEvent_t evt;
     cudaEventCreate(&evt);
@@ -527,7 +480,6 @@ bool GPUEngine::Launch(std::vector<ITEM> &hashFound,bool spinWait) {
       Timer::SleepMillis(1);
     }
     cudaEventDestroy(evt);
-
   }
 
   cudaError_t err = cudaGetLastError();
@@ -573,7 +525,5 @@ bool GPUEngine::Launch(std::vector<ITEM> &hashFound,bool spinWait) {
 
     hashFound.push_back(it);
   }
-
   return callKernel();
-
 }
