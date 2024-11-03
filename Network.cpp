@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <algorithm>
+#include <unordered_map>
 #include <signal.h>
 #include <pthread.h>
 
